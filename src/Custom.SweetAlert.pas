@@ -28,6 +28,8 @@ type
     class var FResult           : TResult;
     class var FTitle            : TLabel;
     class var FIcon             : TSkAnimatedImage;
+    class var FFinally          : Boolean;
+    class var FFontName         : String;
   private
     class procedure CreateBackground;
     class procedure CreateBody;
@@ -39,17 +41,22 @@ type
     class procedure CreateLayoutButton;
     class procedure CreateConfirmButton;
     class procedure DoClickConfirmed(Sender: TObject);
+    class procedure CloseMessage;
+    class procedure DoFinishClose(Sender: TObject);
 
     class function CalculeSize: TArray<Single>;
   public
     class function fire(const ASweetAlert: ISweetAlert): IThen; overload;
 
     class procedure fire(const AMessage: String); overload;
+    class procedure SetFontFamily(const AFontName: String);
+
+    class constructor Create;
   end;
 
 implementation
 
-uses FMX.Forms, FMX.Types, FMX.Ani, FMX.Graphics, FMX.TextLayout,
+uses FMX.Forms, FMX.Types, FMX.Ani, FMX.Graphics, FMX.TextLayout, System.Threading, System.Math,
   Custom.Button, Custom.SweetAlert.Classes;
 
 { Swal }
@@ -63,6 +70,9 @@ begin
   CreateBackground;
   CreateBody;
 
+  if LSweetAlert.icon <> TSweetAlertIconType.null then
+    CreateIcon(LSweetAlert.icon);
+
   if LSweetAlert.title.Trim.IsEmpty then
     CreateMessage(LSweetAlert.text)
   else
@@ -70,9 +80,6 @@ begin
     CreateTitle(LSweetAlert.title);
     CreateMessage(LSweetAlert.text, 18, []);
   end;
-
-  if LSweetAlert.icon <> TSweetAlertIconType.null then
-    CreateIcon(LSweetAlert.icon);
 
   CreateLayoutButton;
   CreateConfirmButton;
@@ -85,10 +92,14 @@ class procedure Swal.AnimateBody;
 var
   LSizeCalculed: TArray<Single>;
 begin
-  LSizeCalculed := CalculeSize;
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      LSizeCalculed := CalculeSize;
 
-  TAnimator.AnimateFloat(FBody, 'height', LSizeCalculed[0], 0.5, TAnimationType.Out, TInterpolationType.Elastic);
-  TAnimator.AnimateFloat(FBody, 'width', LSizeCalculed[1], 0.5, TAnimationType.Out, TInterpolationType.Elastic);
+      TAnimator.AnimateFloat(FBody, 'height', LSizeCalculed[0], 0.7, TAnimationType.Out, TInterpolationType.Elastic);
+      TAnimator.AnimateFloat(FBody, 'width', LSizeCalculed[1], 0.7, TAnimationType.Out, TInterpolationType.Elastic);
+    end);
 end;
 
 class function Swal.CalculeSize: TArray<Single>;
@@ -96,6 +107,7 @@ var
   LText, LTitleText: TTextLayout;
   LTitleHeight     : Single;
   LIconHeight      : Single;
+  LNewHeight       : Single;
 begin
   LText        := TTextLayoutManager.DefaultTextLayout.Create;
   LTitleText   := TTextLayoutManager.DefaultTextLayout.Create;
@@ -104,7 +116,7 @@ begin
 
   try
     LText.Font     := FMessage.Font;
-    LText.TopLeft  := TPointF.Create(Application.MainForm.Width, Application.MainForm.Height);
+    LText.TopLeft  := TPointF.Create(0, 0);
     LText.text     := FMessage.text;
     LText.WordWrap := FMessage.WordWrap;
 
@@ -119,20 +131,61 @@ begin
     end;
 
     if FIcon <> nil then
-      LIconHeight := FIcon.Height;
+      LIconHeight := FIcon.Height + FIcon.Margins.Bottom;
 
-    Result := [LText.Height + FBody.Padding.Bottom + FBody.Padding.Top + LTitleHeight + FLayoutButton.Height + FLayoutButton.Margins.Top + LIconHeight,
-      LText.TextWidth + (FBody.Padding.Right + FBody.Padding.Left)];
+    Result := [LText.Height + FBody.Padding.Bottom + FBody.Padding.Top + LTitleHeight + FLayoutButton.Height + FLayoutButton.Margins.Bottom +
+      FBody.Margins.Bottom + FBody.Margins.Top + LIconHeight, LText.TextWidth + (FBody.Padding.Right + FBody.Padding.Left + +FBody.Margins.Left +
+      FBody.Margins.Right)];
 
     if Result[1] > FBackGround.Width then
     begin
-      Result[0] := Result[0] + (LText.Height * Trunc(Result[1] / FBackGround.Width));
-      Result[1] := FBackGround.Width - (FBody.Padding.Right + FBody.Padding.Left);
+      LNewHeight := LText.Height * RoundTo(LText.TextWidth / FBackGround.Width, 0);
+
+      Result[0] := Result[0] + LNewHeight + FLayoutButton.Margins.Bottom + FMessage.Margins.Bottom;
+      Result[1] := FBackGround.Width - (FBody.Padding.Right + FBody.Padding.Left + FBody.Margins.Left + FBody.Margins.Right);
     end;
+
   finally
     LTitleText.Free;
     LText.Free;
   end;
+end;
+
+class procedure Swal.CloseMessage;
+var
+  LFloatAnimation: TFloatAnimation;
+begin
+  TThread.Synchronize(nil,
+    procedure
+    begin
+      FMessage.Visible := False;
+
+      if FTitle <> nil then
+        FTitle.Visible := False;
+
+      FLayoutButton.Visible := False;
+
+      if FIcon <> nil then
+        FIcon.Visible := False;
+
+      LFloatAnimation := TFloatAnimation.Create(nil);
+      LFloatAnimation.OnFinish := DoFinishClose;
+      LFloatAnimation.Parent := FBody;
+      LFloatAnimation.AnimationType := TAnimationType.In;
+      LFloatAnimation.Interpolation := TInterpolationType.Elastic;
+      LFloatAnimation.Duration := 0.3;
+      LFloatAnimation.PropertyName := 'width';
+      LFloatAnimation.StartFromCurrent := True;
+      LFloatAnimation.StopValue := 0;
+
+      TAnimator.AnimateFloat(FBody, 'height', 0, 0.3, TAnimationType.In, TInterpolationType.Back);
+      LFloatAnimation.Start;
+    end);
+end;
+
+class constructor Swal.Create;
+begin
+  FFontName := 'Quicksand';
 end;
 
 class procedure Swal.CreateBackground;
@@ -143,6 +196,8 @@ begin
   FBackGround.Opacity     := 0.55;
   FBackGround.Align       := TAlignLayout.Client;
   FBackGround.Stroke.Kind := TBrushKind.None;
+
+  FFinally := False;
 end;
 
 class procedure Swal.CreateBody;
@@ -153,19 +208,17 @@ begin
   FBody.Parent         := Application.MainForm;
   FBody.Fill.Color     := TAlphaColorRec.White;
   FBody.Align          := TAlignLayout.Center;
-  FBody.Height         := FBackGround.Height - 8;
-  FBody.Width          := FBackGround.Width - 8;
   FBody.Stroke.Kind    := TBrushKind.None;
   FBody.XRadius        := 5.72;
   FBody.YRadius        := 5.72;
   FBody.Margins.Left   := 8;
   FBody.Margins.Right  := 8;
   FBody.Margins.Top    := 8;
-  FBody.Margins.Right  := 8;
-  FBody.Padding.Left   := 60;
-  FBody.Padding.Right  := 60;
-  FBody.Padding.Top    := 15;
-  FBody.Padding.Bottom := 15;
+  FBody.Margins.Bottom := 8;
+  FBody.Padding.Left   := FBackGround.Width * 0.02;
+  FBody.Padding.Right  := FBackGround.Width * 0.02;
+  FBody.Padding.Top    := FBackGround.Height * 0.01;
+  FBody.Padding.Bottom := FBackGround.Height * 0.01;
 end;
 
 class procedure Swal.CreateConfirmButton;
@@ -190,11 +243,11 @@ class procedure Swal.CreateIcon(const AIcon: TSweetAlertIconType);
 var
   LStream: TStream;
 begin
-  FIcon                := TSkAnimatedImage.Create(FBody);
+  FIcon := TSkAnimatedImage.Create(FBody);
   if AIcon in [TSweetAlertIconType.info, TSweetAlertIconType.warning, TSweetAlertIconType.success] then
-    FIcon.Height         := 68
+    FIcon.Height := 68
   else
-    FIcon.Height         := 58;
+    FIcon.Height := 58;
 
   FIcon.Align          := TAlignLayout.MostTop;
   FIcon.Index          := 0;
@@ -211,15 +264,11 @@ end;
 
 class procedure Swal.CreateLayoutButton;
 begin
-  FLayoutButton               := TLayout.Create(FBody);
-  FLayoutButton.Align         := TAlignLayout.Bottom;
-  FLayoutButton.Margins.Top   := 6;
-  FLayoutButton.Height        := 45;
-  FLayoutButton.Parent        := FBody;
-  FLayoutButton.Padding.Left  := 8;
-  FLayoutButton.Padding.Right := 8;
-  FLayoutButton.Padding.Top   := 8;
-  FLayoutButton.Padding.Right := 8;
+  FLayoutButton                := TLayout.Create(FBody);
+  FLayoutButton.Align          := TAlignLayout.Top;
+  FLayoutButton.Margins.Bottom := 6;
+  FLayoutButton.Height         := 45;
+  FLayoutButton.Parent         := FBody;
 end;
 
 class procedure Swal.CreateMessage(const AMessage: String; ASize: Single; AFontStyles: TFontStyles);
@@ -235,6 +284,8 @@ begin
   FMessage.Font.Style     := AFontStyles;
   FMessage.TextAlign      := TTextAlign.Center;
   FMessage.FontColor      := $FF545454;
+  FMessage.Font.Family    := FFontName;
+  FMessage.Margins.Bottom := 8;
 end;
 
 class procedure Swal.CreateTitle(const ATitle: String);
@@ -251,6 +302,7 @@ begin
   FTitle.TextAlign      := TTextAlign.Center;
   FTitle.FontColor      := $FF545454;
   FTitle.Margins.Bottom := 8;
+  FTitle.Font.Family    := FFontName;
 end;
 
 class procedure Swal.CreateMessage(const AMessage: String);
@@ -260,8 +312,21 @@ end;
 
 class procedure Swal.DoClickConfirmed(Sender: TObject);
 begin
-  FBackGround.Free;
   FResult := TResult.Confirmed;
+  CloseMessage;
+end;
+
+class procedure Swal.DoFinishClose(Sender: TObject);
+begin
+  FBackGround.Visible := False;
+  FreeAndNil(FIcon);
+  FreeAndNil(FTitle);
+  FreeAndNil(FMessage);
+  FreeAndNil(FLayoutButton);
+  FreeAndNil(FBody);
+  FreeAndNil(FBackGround);
+
+  FFinally := True;
 end;
 
 class procedure Swal.fire(const AMessage: String);
@@ -277,6 +342,11 @@ begin
   CreateConfirmButton;
   FMessage.Font.Style := [TFontStyle.fsBold];
   AnimateBody;
+end;
+
+class procedure Swal.SetFontFamily(const AFontName: String);
+begin
+  FFontName := AFontName;
 end;
 
 { Swal.TThen }
