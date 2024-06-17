@@ -108,26 +108,29 @@ var
   LTitleHeight     : Single;
   LIconHeight      : Single;
   LNewHeight       : Single;
+  LTitleWidth: Single;
 begin
   LText        := TTextLayoutManager.DefaultTextLayout.Create;
   LTitleText   := TTextLayoutManager.DefaultTextLayout.Create;
   LTitleHeight := 0;
   LIconHeight  := 0;
+  LTitleWidth  := 0;
 
   try
     LText.Font     := FMessage.Font;
-    LText.TopLeft  := TPointF.Create(0, 0);
+    LText.TopLeft  := TPointF.Create(FBackGround.Width, FBackGround.Height);
     LText.text     := FMessage.text;
     LText.WordWrap := FMessage.WordWrap;
 
     if FTitle <> nil then
     begin
       LTitleText.Font     := FTitle.Font;
-      LTitleText.TopLeft  := TPointF.Create(0, 0);
+      LTitleText.TopLeft  := TPointF.Create(FBackGround.Width, FBackGround.Height);
       LTitleText.text     := FTitle.text;
       LTitleText.WordWrap := FTitle.WordWrap;
 
       LTitleHeight := LTitleText.Height + FTitle.Margins.Bottom;
+      LTitleWidth := LTitleText.Width;
     end;
 
     if FIcon <> nil then
@@ -135,7 +138,7 @@ begin
 
     Result := [LText.Height + FBody.Padding.Bottom + FBody.Padding.Top + LTitleHeight + FLayoutButton.Height + FLayoutButton.Margins.Bottom +
       FBody.Margins.Bottom + FBody.Margins.Top + LIconHeight, LText.TextWidth + (FBody.Padding.Right + FBody.Padding.Left + +FBody.Margins.Left +
-      FBody.Margins.Right)];
+      FBody.Margins.Right) + LTitleWidth];
 
     if Result[1] > FBackGround.Width then
     begin
