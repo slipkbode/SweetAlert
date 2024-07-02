@@ -25,6 +25,9 @@ type
     procedure CreateBackGround;
     procedure CreateBody;
     procedure Animate; virtual;
+    procedure CloseMessage; virtual; abstract;
+    procedure DoFinishClose(Sender: TObject); virtual;
+    procedure CallThen; virtual;
 
     function GetSize: TArray<Single>; virtual; abstract;
   public
@@ -40,7 +43,6 @@ type
     FStyles : TFontStyles;
     FMessage   : String;
 
-    procedure DoFinishClose(Sender: TObject);
     procedure DoClickCancel(Sender: TObject);
   protected
     FConfirmButtonText : String;
@@ -57,8 +59,7 @@ type
     procedure CreateObjects; override;
     procedure DoClickConfirmed(Sender: TObject); virtual;
     procedure HideComponents; virtual;
-    procedure CallThen; virtual;
-    procedure CloseMessage;
+    procedure CloseMessage; override;
 
     function GetSize: TArray<Single>; override;
   public
@@ -183,6 +184,20 @@ type
      function Color: TAlphaColor; overload;
   end;
 
+  TSweetPopup = class(TInterfacedObject, ISweetPopup)
+  strict private
+    FName  : String;
+    FOption: String;
+  private
+    function Option(const AOption: String): ISweetPopup; overload;
+    function Name(const AName: String): ISweetPopup; overload;
+  public
+    class function New: ISweetPopup;
+
+    function Option: String; overload;
+    function Name: String; overload;
+  end;
+
 implementation
 
 uses
@@ -221,6 +236,11 @@ begin
       )
     end
   )
+end;
+
+procedure TSweetBase.CallThen;
+begin
+
 end;
 
 constructor TSweetBase.Create;
@@ -277,6 +297,13 @@ begin
   inherited;
 end;
 
+procedure TSweetBase.DoFinishClose(Sender: TObject);
+begin
+  FBackGround.Visible := False;
+  CallThen;
+  Self.Free;
+end;
+
 class procedure TSweetBase.SetFontFamily(const AFontFamily: String);
 begin
   FFontFamily := AFontFamily;
@@ -302,11 +329,6 @@ begin
 end;
 
 { TSweetMessage }
-
-procedure TSweetMessage.CallThen;
-begin
-  
-end;
 
 procedure TSweetMessage.CloseMessage;
 var
@@ -463,13 +485,6 @@ procedure TSweetMessage.DoClickConfirmed(Sender: TObject);
 begin
   FResult := TResult.Confirmed;
   CloseMessage;
-end;
-
-procedure TSweetMessage.DoFinishClose(Sender: TObject);
-begin
-  FBackGround.Visible := False;
-  CallThen;
-  Self.Free;
 end;
 
 function TSweetMessage.GetSize: TArray<Single>;
@@ -903,6 +918,35 @@ end;
 function TSweetLookup.title: String;
 begin
   Result := Ftitle;
+end;
+
+{ TSweetPopup }
+
+function TSweetPopup.Name(const AName: String): ISweetPopup;
+begin
+  Result := Self;
+  FName  := AName;
+end;
+
+function TSweetPopup.Option(const AOption: String): ISweetPopup;
+begin
+  Result  := Self;
+  FOption := AOption;
+end;
+
+function TSweetPopup.Name: String;
+begin
+  Result := FName;
+end;
+
+class function TSweetPopup.New: ISweetPopup;
+begin
+  Result := Self.Create;
+end;
+
+function TSweetPopup.Option: String;
+begin
+  Result := FOption;
 end;
 
 end.

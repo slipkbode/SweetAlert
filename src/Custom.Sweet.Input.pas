@@ -92,6 +92,7 @@ begin
   LEdit.ReturnKeyType          := TReturnKeyType.Go;
   LEdit.Parent                 := FBackGround.FindComponent('body') as TControl;
   LEdit.Name                   := 'edtValue';
+  LEdit.StyledSettings         := [TStyledSetting.FontColor];
   LEdit.TextSettings.HorzAlign := TTextAlign.Center;
   {$IFDEF WINDOWS}
   LEdit.SetFocus;
