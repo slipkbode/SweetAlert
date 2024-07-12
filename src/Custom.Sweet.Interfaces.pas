@@ -34,7 +34,7 @@ type
   ISweetLookupItem = interface
     ['{98BA9C12-D85F-4B30-8BF1-FCF744613EFD}']
     function icon(const AData: TBytes): ISweetLookupItem; overload;
-    function icon: TBytes; overload;
+    function icon: TBytes; overload; 
     function text(const AText: String): ISweetLookupItem; overload;
     function text: String; overload;
     function id(const AId: Variant): ISweetLookupItem; overload;
