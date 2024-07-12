@@ -175,13 +175,13 @@ type
      function text(const AText: String): ISweetLookupItem; overload;
      function id(const AId: Variant): ISweetLookupItem; overload;
      function Color(const AColor: TAlphaColor): ISweetLookupItem; overload;
-  public
-     class function New: ISweetLookupItem;
 
      function icon: TBytes; overload;
      function text: String; overload;
      function id: Variant; overload;
      function Color: TAlphaColor; overload;
+  public
+     class function New: ISweetLookupItem;
   end;
 
   TSweetPopup = class(TInterfacedObject, ISweetPopup)
@@ -761,17 +761,17 @@ end;
 class function TSweetIcon.GetStream(const ASweetAlertIconType: TSweetAlertIconType): TStream;
 begin
   case ASweetAlertIconType of
-    success:
+    TSweetAlertIconType.success:
       Result := TStringStream.Create(cSucess);
-    error:
+    TSweetAlertIconType.error:
       Result := TStringStream.Create(cError);
-    warning:
+    TSweetAlertIconType.warning:
       Result := TStringStream.Create(cWarning);
-    info:
+    TSweetAlertIconType.info:
       Result := TStringStream.Create(cInfo);
-    question:
+    TSweetAlertIconType.question:
       Result := TStringStream.Create(cQuestion);
-    wait:
+    TSweetAlertIconType.wait:
       Result := TStringStream.Create(cWait);
     else
       Result := nil;

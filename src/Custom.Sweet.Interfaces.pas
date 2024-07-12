@@ -33,10 +33,14 @@ type
 
   ISweetLookupItem = interface
     ['{98BA9C12-D85F-4B30-8BF1-FCF744613EFD}']
-    function icon(const AData: TBytes): ISweetLookupItem;
-    function text(const AText: String): ISweetLookupItem;
-    function id(const AId: Variant): ISweetLookupItem;
-    function Color(const AColor: TAlphaColor): ISweetLookupItem;
+    function icon(const AData: TBytes): ISweetLookupItem; overload;
+    function icon: TBytes; overload;
+    function text(const AText: String): ISweetLookupItem; overload;
+    function text: String; overload;
+    function id(const AId: Variant): ISweetLookupItem; overload;
+    function id: Variant; overload;
+    function Color(const AColor: TAlphaColor): ISweetLookupItem; overload;
+    function Color: TAlphaColor; overload;
   end;
 
   ISweetLookup = interface

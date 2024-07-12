@@ -51,7 +51,6 @@ uses System.Rtti,
 procedure Lookup.AddItemsLookup;
 var
   LListBox    : TListBox;
-  LSweetItem  : TSweetLookupItem;
   LRectangle  : TRectangle;
 begin
   LListBox            := FBackGround.FindComponent('ltbLookup') as TListBox;
@@ -60,15 +59,13 @@ begin
   try
     for var LItem in FSweetLookup.Items do
     begin
-      LSweetItem := TSweetLookupItem(LItem);
-
       LRectangle := CreateContainerLookupItem(
         LListBox.ListItems[LListBox.Items.Add('')],
-        LSweetItem.Color
+        LItem.Color
       );
 
-      CreateIconLookup(LRectangle, LSweetItem.icon, FSweetLookup.AlignIcon);
-      CreateTextLookup(LRectangle, LSweetItem.text, FSweetLookup.AlignText);
+      CreateIconLookup(LRectangle, LItem.icon, FSweetLookup.AlignIcon);
+      CreateTextLookup(LRectangle, LItem.text, FSweetLookup.AlignText);
     end;
   finally
     LListBox.EndUpdate;
@@ -109,7 +106,7 @@ begin
     LIcon.Align := AAlign;
 
   LIcon.Width    := 70;
-  LIcon.WrapMode := TSkAnimatedImageWrapMode.Stretch;
+  LIcon.WrapMode := TSkAnimatedImageWrapMode.FitCrop;
   LIcon.HitTest  := False;
 end;
 
