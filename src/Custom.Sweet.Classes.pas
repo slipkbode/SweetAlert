@@ -589,6 +589,9 @@ begin
 
   LIcon.Name := 'icon';
 
+  if FIcon = TSweetAlertIconType.null then
+    FIcon := TSweetAlertIconType.info;
+
   LStream := TSweetIcon.GetStream(FIcon);
   try
     LIcon.LoadFromStream(LStream);
@@ -622,6 +625,7 @@ begin
   LTitle.FontColor      := $FF545454;
   LTitle.Font.Family    := FFontFamily;
   LTitle.Name           := 'title';
+  LTitle.Visible        := not FTitle.Trim.IsEmpty;
 end;
 
 function TSweetTitle.GetSize: TArray<Single>;
