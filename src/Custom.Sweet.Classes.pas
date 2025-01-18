@@ -589,9 +589,6 @@ begin
 
   LIcon.Name := 'icon';
 
-  if FIcon = TSweetAlertIconType.null then
-    FIcon := TSweetAlertIconType.info;
-
   LStream := TSweetIcon.GetStream(FIcon);
   try
     LIcon.LoadFromStream(LStream);
@@ -603,8 +600,12 @@ end;
 procedure TSweetTitle.CreateObjects;
 begin
   inherited;
-  CreateIcon;
-  CreateTitle;
+  if FIcon <> TSweetAlertIconType.null then
+    CreateIcon;
+
+  if not FTitle.Trim.IsEmpty then
+    CreateTitle;
+
   AdjustFontMessage;
 end;
 
@@ -625,7 +626,6 @@ begin
   LTitle.FontColor      := $FF545454;
   LTitle.Font.Family    := FFontFamily;
   LTitle.Name           := 'title';
-  LTitle.Visible        := not FTitle.Trim.IsEmpty;
 end;
 
 function TSweetTitle.GetSize: TArray<Single>;
@@ -640,6 +640,9 @@ begin
   try
     LLabel := FBackGround.FindComponent('title') as TLabel;
     LIcon  := FBackGround.FindComponent('icon') as TControl;
+
+    if LLabel = nil then
+      Exit;
 
     LText.Font     := LLabel.Font;
     LText.TopLeft  := TPointF.Create(FBackGround.Width, FBackGround.Height);
