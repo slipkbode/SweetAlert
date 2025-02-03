@@ -366,7 +366,9 @@ begin
   FMessage           := AMessage;
   FSize              := 28;
   FStyles            := [TFontStyle.fsBold];
-  FConfirmButtonText := 'OK';
+
+  if FconfirmButtonText.Trim.IsEmpty then
+    FConfirmButtonText := 'OK';
   inherited Create;
 end;
 
@@ -515,7 +517,7 @@ begin
     if LText.TextWidth > FBackGround.Width then
     begin
       Result[0] := Result[0] + (LText.Height * (Round(Result[1] / FBackGround.Width)));
-      Result[1] := FBackGround.Width - 16;
+      Result[1] := FBackGround.Width - 19;
     end;
 
     if Result[1] < 200 then
